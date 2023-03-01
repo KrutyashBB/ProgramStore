@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="shadow p-3 mb-5 bg-white rounded">
+    <h1>Оставить отзыв</h1>
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        {{ form.username.label(class="form-label") }}
+        {{ form.username(class="form-control") }}
+
+        {{ form.review.label(class="form-label") }}
+        {{ form.review(class="form-control", rows='4') }}
+        <br>
+        {{ form.submit(class="btn btn-secondary") }}
+    </form>
+</div>
+
+{% for review in reviews %}
+<div class="shadow p-3 mb-5 bg-white rounded">
+    <h2>{{review.username}}</h2>
+    {{review.review}}<br>
+    {{review.date_added}}<br><br>
+</div>
+{% endfor %}
+
+{% endblock %}

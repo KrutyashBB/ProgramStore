@@ -3,26 +3,41 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
 from wtforms.widgets import TextArea
 from wtforms.validators import DataRequired
-from flask_sqlalchemy import SQLAlchemy
-
 from datetime import date
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
+app.config['SECRET_KEY'] = 'dsjahfjshdfjasf54564'
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 
 
 class Reviews(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(70), nullable=False)
     review = db.Column(db.Text, nullable=False)
-    date_added = db.Column(db.DateTime, default=date.today())
+    date_added = db.Column(db.Date, default=date.today())
 
 
 class ReviewForm(FlaskForm):
     username = StringField('Имя', validators=[DataRequired()])
     review = StringField('Отзыв', validators=[DataRequired()], widget=TextArea())
     submit = SubmitField('Отправить')
+
+
+@app.route('/reviews', methods=['GET', 'POST'])
+def reviews():
+    form = ReviewForm()
+    reviews = Reviews.query.order_by(Reviews.date_added)
+    if form.validate_on_submit():
+        review = Reviews(username=form.username.data, review=form.review.data)
+        db.session.add(review)
+        db.session.commit()
+        form.username.data = ''
+        form.review.data = ''
+    return render_template('reviews.html', form=form, reviews=reviews)
 
 
 @app.route('/')
