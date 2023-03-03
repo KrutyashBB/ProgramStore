@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block title%}
+<title>Добавить продукт</title>
+{% endblock %}
+
+{% block content %}
+
+<div class="shadow p-3 mb-5 bg-white rounded">
+    <h1>Добавить продукт</h1>
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        {{ form.name.label(class="form-label") }}
+        {{ form.name(class="form-control") }}
+
+        {{ form.price.label(class="form-label") }}
+        {{ form.price(class="form-control") }}
+
+        {{ form.stock.label(class="form-label") }}
+        {{ form.stock(class="form-control") }}
+
+        {{ form.description.label(class="form-label") }}
+        {{ form.description(class="form-control", rows='6') }}
+        <br>
+        <div class="row">
+            <div class="col-md-4">{{ form.img_1(class="form-control") }}</div>
+            <div class="col-md-4">{{ form.img_2(class="form-control") }}</div>
+            <div class="col-md-4">{{ form.img_3(class="form-control") }}</div>
+        </div>
+
+        <br>
+        {{ form.submit(class="btn btn-secondary") }}
+    </form>
+</div>
+
+{% endblock %}

@@ -1,5 +1,9 @@
 {% extends 'base.html' %}
 
+{% block title%}
+<title>Отзывы</title>
+{% endblock %}
+
 {% block content %}
 <div class="shadow p-3 mb-5 bg-white rounded">
     <h1>Оставить отзыв</h1>
@@ -20,7 +24,7 @@
 <div class="shadow p-3 mb-5 bg-white rounded">
     <h2>{{review.username}}</h2>
     {{review.review}}<br>
-    {{review.date_added}}<br><br>
+    {{review.date_added}}<br>
 </div>
 {% endfor %}
 
