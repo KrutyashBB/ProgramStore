@@ -1,6 +1,10 @@
-from flask import Flask, request, session, render_template, url_for, flash, redirect
+import os
+import uuid
+
+from flask import Flask, request, render_template, url_for, flash, redirect
 from flask_wtf import FlaskForm
-from flask_wtf.file import FileAllowed, FileField, FileRequired
+from flask_wtf.file import FileField, FileAllowed
+from werkzeug.utils import secure_filename
 from wtforms import StringField, SubmitField, EmailField, IntegerField, PasswordField, validators
 from wtforms.widgets import TextArea
 from wtforms.validators import DataRequired
@@ -12,6 +16,10 @@ from flask_migrate import Migrate
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SECRET_KEY'] = 'dsjahfjshdfjasf54564'
+
+UPLOAD_FOLDER = 'static/img/products'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
@@ -28,6 +36,18 @@ class User(db.Model):
     name = db.Column(db.String(70), nullable=False)
     email = db.Column(db.String(120), nullable=False, unique=True)
     password_hash = db.Column(db.String(128), nullable=False)
+
+
+class Products(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(70), nullable=False)
+    price = db.Column(db.Integer, nullable=False)
+    stock = db.Column(db.Integer, nullable=False)
+    description = db.Column(db.Text, nullable=False)
+
+    img_1 = db.Column(db.String(150), nullable=False)
+    img_2 = db.Column(db.String(150), nullable=False)
+    img_3 = db.Column(db.String(150), nullable=False)
 
 
 class ReviewForm(FlaskForm):
@@ -56,9 +76,9 @@ class AddProductForm(FlaskForm):
     price = IntegerField("Цена", validators=[DataRequired()])
     stock = IntegerField("Количество", validators=[DataRequired()])
     description = StringField('Описание', validators=[DataRequired()], widget=TextArea())
-    img_1 = FileField('Фото 1', validators=[FileRequired(), FileAllowed(['jpg', 'png'])])
-    img_2 = FileField('Фото 2', validators=[FileRequired(), FileAllowed(['jpg', 'png'])])
-    img_3 = FileField('Фото 3', validators=[FileRequired(), FileAllowed(['jpg', 'png'])])
+    img_1 = FileField('Фото 1', validators=[DataRequired()])
+    img_2 = FileField('Фото 2', validators=[DataRequired()])
+    img_3 = FileField('Фото 3', validators=[DataRequired()])
     submit = SubmitField("Добавить")
 
 
@@ -108,6 +128,36 @@ def login():
 @app.route('/add-product', methods=['GET', 'POST'])
 def add_product():
     form = AddProductForm()
+    if request.method == 'POST':
+        name = form.name.data
+        price = form.price.data
+        stock = form.stock.data
+        desc = form.description.data
+
+        img_1 = request.files['img_1']
+        pic_name1 = str(uuid.uuid1()) + '_' + secure_filename(img_1.filename)
+        saver1 = request.files['img_1']
+        saver1.save(os.path.join(app.config['UPLOAD_FOLDER'], pic_name1))
+        img_1 = pic_name1
+
+        img_2 = request.files['img_2']
+        pic_name2 = str(uuid.uuid1()) + '_' + secure_filename(img_2.filename)
+        saver2 = request.files['img_2']
+        saver2.save(os.path.join(app.config['UPLOAD_FOLDER'], pic_name2))
+        img_2 = pic_name2
+
+        img_3 = request.files['img_3']
+        pic_name3 = str(uuid.uuid1()) + '_' + secure_filename(img_3.filename)
+        saver3 = request.files['img_3']
+        saver3.save(os.path.join(app.config['UPLOAD_FOLDER'], pic_name3))
+        img_3 = pic_name3
+
+        product = Products(name=name, price=price, stock=stock, description=desc, img_1=img_1, img_2=img_2, img_3=img_3)
+        db.session.add(product)
+        flash('Товар был успешно добавлен')
+        db.session.commit()
+        return redirect(url_for('add_product'))
+
     return render_template('add-product.html', form=form)
 
 
