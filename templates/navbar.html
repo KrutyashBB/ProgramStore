@@ -10,23 +10,29 @@
           <a class="nav-link" href="{{url_for('catalog')}}">Каталог</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="{{url_for('register')}}">Регистрация</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{{url_for('login')}}">Войти</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#">Корзина</a>
-        </li>
-        <li class="nav-item">
           <a class="nav-link" href="{{url_for('reviews')}}">Отзывы</a>
         </li>
         <li class="nav-item">
           <a class="nav-link" href="{{url_for('guarantees')}}">Гарантии</a>
         </li>
+        {% if not current_user.is_authenticated %}
         <li class="nav-item">
-          <a class="nav-link" href="{{url_for('add_product')}}">Добавить товар</a>
+          <a class="nav-link" href="{{url_for('register')}}">Регистрация</a>
         </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{url_for('login')}}">Войти</a>
+        </li>
+        {% else %}
+        <li class="nav-item">
+          <a class="nav-link" href="#">Корзина</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{url_for('admin')}}">Панель Администратора</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{url_for('logout')}}">Выйти</a>
+        </li>
+        {% endif %}
       </ul>
       <form class="d-flex" role="search">
         <input class="form-control me-2" type="search" placeholder="Поиск" aria-label="Поиск">

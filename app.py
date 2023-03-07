@@ -1,9 +1,7 @@
-import os
-import uuid
-
 from flask import Flask, request, render_template, url_for, flash, redirect
 from flask_wtf import FlaskForm
-from flask_wtf.file import FileField, FileAllowed
+from flask_wtf.file import FileField
+from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
 from werkzeug.utils import secure_filename
 from wtforms import StringField, SubmitField, EmailField, IntegerField, PasswordField, validators
 from wtforms.widgets import TextArea
@@ -12,6 +10,9 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import date
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+
+import os
+import uuid
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
@@ -23,6 +24,11 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+login_manager.login_message = 'Сначала нужно войти в аккаунт'
+
 
 class Reviews(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -31,7 +37,7 @@ class Reviews(db.Model):
     date_added = db.Column(db.Date, default=date.today())
 
 
-class User(db.Model):
+class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(70), nullable=False)
     email = db.Column(db.String(120), nullable=False, unique=True)
@@ -76,17 +82,22 @@ class AddProductForm(FlaskForm):
     price = IntegerField("Цена", validators=[DataRequired()])
     stock = IntegerField("Количество", validators=[DataRequired()])
     description = StringField('Описание', validators=[DataRequired()], widget=TextArea())
-    img_1 = FileField('Фото 1', validators=[DataRequired()])
+    img_1 = FileField('Главное фото', validators=[DataRequired()])
     img_2 = FileField('Фото 2', validators=[DataRequired()])
     img_3 = FileField('Фото 3', validators=[DataRequired()])
     submit = SubmitField("Добавить")
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
 
 @app.route('/reviews', methods=['GET', 'POST'])
 def reviews():
     form = ReviewForm()
     reviews = Reviews.query.order_by(Reviews.date_added)
-    if form.validate_on_submit():
+    if form.validate_on_submit() and request.method == 'POST':
         review = Reviews(username=form.username.data, review=form.review.data)
         db.session.add(review)
         db.session.commit()
@@ -116,6 +127,7 @@ def login():
         user = User.query.filter_by(email=form.email.data).first()
         if user:
             if check_password_hash(user.password_hash, form.password_hash.data):
+                login_user(user)
                 flash('Вы успешно вошли!')
                 return redirect(url_for('index'))
             else:
@@ -125,7 +137,16 @@ def login():
     return render_template('login.html', form=form)
 
 
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('Вы успешно вышли из аккаунта')
+    return redirect(url_for('login'))
+
+
 @app.route('/add-product', methods=['GET', 'POST'])
+@login_required
 def add_product():
     form = AddProductForm()
     if request.method == 'POST':
@@ -159,6 +180,13 @@ def add_product():
         return redirect(url_for('add_product'))
 
     return render_template('add-product.html', form=form)
+
+
+@app.route('/admin')
+@login_required
+def admin():
+    products = Products.query.all()
+    return render_template('admin.html', products=products)
 
 
 @app.route('/')

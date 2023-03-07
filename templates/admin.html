@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block title%}
+<title>Админ</title>
+{% endblock %}
+
+{% block content %}
+
+<a href="{{url_for('add_product')}}" class="btn btn-secondary" style="margin-bottom: 10px;">Добавить Товар</a>
+<table class="table table-sm table-success align-baseline">
+    <thead>
+    <tr>
+        <th scope="col">№</th>
+        <th scope="col">Цена</th>
+        <th scope="col">Количество</th>
+        <th scope="col">Фото</th>
+        <th scope="col">Редактировать</th>
+        <th scope="col">Удалить</th>
+    </tr>
+    </thead>
+    <tbody class="table-group-divider">
+    {% for product in products %}
+    <tr>
+        <th class="w-25">{{loop.index}}</th>
+        <th class="w-25">{{product.price}}</th>
+        <th class="w-25">{{product.stock}}</th>
+        <th class="w-25"><img src="{{url_for('static', filename='img/products/' + product.img_1)}}" width="40"></th>
+        <th class="w-25"><a href="" class="btn btn-secondary">Редактировать</a></th>
+        <th class="w-25"><a href="" class="btn btn-danger">Удалить</a></th>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}
