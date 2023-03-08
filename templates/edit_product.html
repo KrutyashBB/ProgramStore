@@ -1,13 +1,13 @@
 {% extends 'base.html' %}
 
 {% block title%}
-<title>Добавить товар</title>
+<title>Редактировать Товар</title>
 {% endblock %}
 
 {% block content %}
 
 <div class="shadow p-3 mb-5 bg-white rounded">
-    <h1>Добавить Товар</h1>
+    <h1>Редактировать Товар</h1>
     <form method="POST" enctype="multipart/form-data">
         {{ form.hidden_tag() }}
 
@@ -24,9 +24,18 @@
         {{ form.description(class="form-control", rows='6') }}
         <br>
         <div class="row">
-            <div class="col-md-4">{{form.img_1.label(class="form-label")}} {{ form.img_1(class="form-control")}}</div>
-            <div class="col-md-4">{{form.img_2.label(class="form-label")}} {{ form.img_2(class="form-control")}}</div>
-            <div class="col-md-4">{{form.img_3.label(class="form-label")}} {{ form.img_3(class="form-control")}}</div>
+            <div class="col-md-4">
+                {{form.img_1.label(class="form-label")}}
+                <input type="file" name="img_1" class="form-control">
+            </div>
+            <div class="col-md-4">
+                {{form.img_2.label(class="form-label")}}
+                <input type="file" name="img_2" class="form-control">
+            </div>
+            <div class="col-md-4">
+                {{form.img_3.label(class="form-label")}}
+                <input type="file" name="img_3" class="form-control">
+            </div>
         </div>
 
         <br>

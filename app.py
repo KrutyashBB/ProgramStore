@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, url_for, flash, redirect
+from flask import Flask, request, render_template, url_for, flash, redirect, current_app
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField
 from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
@@ -145,6 +145,14 @@ def logout():
     return redirect(url_for('login'))
 
 
+def create_product_photo(file):
+    img = file
+    pic_name = str(uuid.uuid1()) + '_' + secure_filename(img.filename)
+    saver = request.files['img_1']
+    saver.save(os.path.join(app.config['UPLOAD_FOLDER'], pic_name))
+    return pic_name
+
+
 @app.route('/add-product', methods=['GET', 'POST'])
 @login_required
 def add_product():
@@ -155,23 +163,9 @@ def add_product():
         stock = form.stock.data
         desc = form.description.data
 
-        img_1 = request.files['img_1']
-        pic_name1 = str(uuid.uuid1()) + '_' + secure_filename(img_1.filename)
-        saver1 = request.files['img_1']
-        saver1.save(os.path.join(app.config['UPLOAD_FOLDER'], pic_name1))
-        img_1 = pic_name1
-
-        img_2 = request.files['img_2']
-        pic_name2 = str(uuid.uuid1()) + '_' + secure_filename(img_2.filename)
-        saver2 = request.files['img_2']
-        saver2.save(os.path.join(app.config['UPLOAD_FOLDER'], pic_name2))
-        img_2 = pic_name2
-
-        img_3 = request.files['img_3']
-        pic_name3 = str(uuid.uuid1()) + '_' + secure_filename(img_3.filename)
-        saver3 = request.files['img_3']
-        saver3.save(os.path.join(app.config['UPLOAD_FOLDER'], pic_name3))
-        img_3 = pic_name3
+        img_1 = create_product_photo(request.files['img_1'])
+        img_2 = create_product_photo(request.files['img_2'])
+        img_3 = create_product_photo(request.files['img_3'])
 
         product = Products(name=name, price=price, stock=stock, description=desc, img_1=img_1, img_2=img_2, img_3=img_3)
         db.session.add(product)
@@ -180,6 +174,61 @@ def add_product():
         return redirect(url_for('add_product'))
 
     return render_template('add-product.html', form=form)
+
+
+@app.route('/edit-product/<int:id>', methods=['GET', 'POST'])
+def edit_product(id):
+    form = AddProductForm()
+    form.submit.label.text = 'Редактировать'
+    product = Products.query.get_or_404(id)
+    if request.method == 'POST':
+        product.name = form.name.data
+        product.price = form.price.data
+        product.stock = form.stock.data
+        product.description = form.description.data
+        if request.files.get('img_1'):
+            try:
+                os.unlink(os.path.join(current_app.root_path, 'static/img/products/' + product.img_1))
+                product.img_1 = create_product_photo(request.files['img_1'])
+            except:
+                product.img_1 = create_product_photo(request.files['img_1'])
+        if request.files.get('img_2'):
+            try:
+                os.unlink(os.path.join(current_app.root_path, 'static/img/products/' + product.img_2))
+                product.img_2 = create_product_photo(request.files['img_2'])
+            except:
+                product.img_2 = create_product_photo(request.files['img_2'])
+        if request.files.get('img_3'):
+            try:
+                os.unlink(os.path.join(current_app.root_path, 'static/img/products/' + product.img_3))
+                product.img_3 = create_product_photo(request.files['img_3'])
+            except:
+                product.img_3 = create_product_photo(request.files['img_3'])
+        db.session.commit()
+        flash('Товар успешо изменён')
+        return redirect(url_for('admin'))
+    else:
+        form.name.data = product.name
+        form.price.data = product.price
+        form.stock.data = product.stock
+        form.description.data = product.description
+        return render_template('edit_product.html', form=form)
+
+
+@app.route('/delete-product/<int:id>', methods=['POST'])
+def delete_product(id):
+    product = Products.query.get_or_404(id)
+    if request.method == 'POST':
+        try:
+            os.unlink(os.path.join(current_app.root_path, 'static/img/products/' + product.img_1))
+            os.unlink(os.path.join(current_app.root_path, 'static/img/products/' + product.img_2))
+            os.unlink(os.path.join(current_app.root_path, 'static/img/products/' + product.img_3))
+        except:
+            print('ERROR')
+        db.session.delete(product)
+        db.session.commit()
+        flash('Товар успешно удалён')
+    return redirect(url_for('admin'))
 
 
 @app.route('/admin')
