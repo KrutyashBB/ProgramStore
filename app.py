@@ -245,7 +245,8 @@ def index():
 
 @app.route('/catalog')
 def catalog():
-    return render_template('catalog.html')
+    products = Products.query.filter(Products.stock > 0)
+    return render_template('catalog.html', products=products)
 
 
 @app.route('/guarantees')

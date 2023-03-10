@@ -7,15 +7,15 @@
 {% block content %}
 
 <div class="row">
-    {% for i in range(3) %}
+    {% for product in products %}
     <div class="col">
-        <div class="card" style="width: 17rem;">
-            <img src="" class="card-img-top">
+        <div class="card" style="width: 14rem;">
+            <img src="{{url_for('static', filename='img/products/' + product.img_1)}}" class="card-img-top">
             <div class="card-body">
-                <h5 class="card-title">Windows 11 Pro</h5>
-                <h6 class="card-subtitle mb-2 text-muted">1500 РУБ</h6>
-                <a href="#" class="btn btn-primary">Подробнее</a>
-                <a href="#" class="btn btn-primary">В корзину</a>
+                <h5 class="card-title">{{product.name}}</h5>
+                <h6 class="card-subtitle mb-2 text-muted">{{product.price}} РУБ</h6>
+                <a href="#" class="btn btn-primary btn-sm">Подробнее</a>
+                <a href="#" class="btn btn-primary btn-sm">В корзину</a>
             </div>
         </div>
     </div>
