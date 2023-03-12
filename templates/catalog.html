@@ -14,7 +14,7 @@
             <div class="card-body">
                 <h5 class="card-title">{{product.name}}</h5>
                 <h6 class="card-subtitle mb-2 text-muted">{{product.price}} РУБ</h6>
-                <a href="#" class="btn btn-primary btn-sm">Подробнее</a>
+                <a href="{{url_for('product', id=product.id)}}" class="btn btn-primary btn-sm">Подробнее</a>
                 <a href="#" class="btn btn-primary btn-sm">В корзину</a>
             </div>
         </div>

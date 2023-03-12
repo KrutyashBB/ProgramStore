@@ -10,11 +10,14 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import date
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from flask_ckeditor import CKEditor
+from flask_ckeditor import CKEditorField
 
 import os
 import uuid
 
 app = Flask(__name__)
+ckeditor = CKEditor(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SECRET_KEY'] = 'dsjahfjshdfjasf54564'
 
@@ -81,7 +84,8 @@ class AddProductForm(FlaskForm):
     name = StringField("Название", validators=[DataRequired()])
     price = IntegerField("Цена", validators=[DataRequired()])
     stock = IntegerField("Количество", validators=[DataRequired()])
-    description = StringField('Описание', validators=[DataRequired()], widget=TextArea())
+    # description = StringField('Описание', validators=[DataRequired()], widget=TextArea())
+    description = CKEditorField('Описание', validators=[DataRequired()])
     img_1 = FileField('Главное фото', validators=[DataRequired()])
     img_2 = FileField('Фото 2', validators=[DataRequired()])
     img_3 = FileField('Фото 3', validators=[DataRequired()])
@@ -147,8 +151,8 @@ def logout():
 
 def create_product_photo(file):
     img = file
-    pic_name = str(uuid.uuid1()) + '_' + secure_filename(img.filename)
-    saver = request.files['img_1']
+    pic_name = str(uuid.uuid1()) + '_' + secure_filename(img.filename) + '.png'
+    saver = file
     saver.save(os.path.join(app.config['UPLOAD_FOLDER'], pic_name))
     return pic_name
 
@@ -229,6 +233,12 @@ def delete_product(id):
         db.session.commit()
         flash('Товар успешно удалён')
     return redirect(url_for('admin'))
+
+
+@app.route('/product/<int:id>')
+def product(id):
+    product = Products.query.get_or_404(id)
+    return render_template('product.html', product=product)
 
 
 @app.route('/admin')
