@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, url_for, flash, redirect, current_app
+from flask import Flask, request, render_template, url_for, flash, redirect, current_app, session
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField
 from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
@@ -239,6 +239,94 @@ def delete_product(id):
 def product(id):
     product = Products.query.get_or_404(id)
     return render_template('product.html', product=product)
+
+
+def MagerDicts(dict1, dict2):
+    if isinstance(dict1, list) and isinstance(dict2, list):
+        return dict1 + dict2
+    elif isinstance(dict1, dict) and isinstance(dict2, dict):
+        return dict(list(dict1.items()) + list(dict2.items()))
+    return False
+
+
+@app.route('/add-cart', methods=['POST'])
+def add_cart():
+    try:
+        product_id = request.form.get('product_id')
+        quantity = request.form.get('quantity')
+        product = Products.query.filter_by(id=product_id).first()
+        if product_id and quantity and request.method == 'POST':
+            dictItems = {product_id: {'name': product.name, 'price': product.price, 'quantity': quantity,
+                                      'image': product.img_1}}
+            if 'Shoppingcart' in session:
+                if product_id in session['Shoppingcart']:
+                    session.modified = True
+                    for key, item in session['Shoppingcart'].items():
+                        if int(key) == int(product_id):
+                            item['quantity'] = int(item['quantity']) + int(quantity)
+                else:
+                    session['Shoppingcart'] = MagerDicts(session['Shoppingcart'], dictItems)
+                    return redirect(request.referrer)
+            else:
+                session['Shoppingcart'] = dictItems
+                return redirect(request.referrer)
+    except:
+        pass
+    finally:
+        return redirect(request.referrer)
+
+
+@app.route('/carts')
+def get_cart():
+    if 'Shoppingcart' not in session or len(session['Shoppingcart']) <= 0:
+        return redirect(url_for('catalog'))
+    grandtotal = 0
+    for key, product in session['Shoppingcart'].items():
+        grandtotal += int(product['price']) * int(product['quantity'])
+    return render_template('cart.html', grandtotal=grandtotal)
+
+
+@app.route('/update-cart/<int:id>', methods=['POST'])
+def update_cart(id):
+    if 'Shoppingcart' not in session or len(session['Shoppingcart']) <= 0:
+        return redirect(url_for('index'))
+    if request.method == 'POST':
+        quantity = request.form.get('quantity')
+        try:
+            session.modified = True
+            for key, item in session['Shoppingcart'].items():
+                if int(key) == id:
+                    item['quantity'] = quantity
+                    flash('Товар обновлён')
+                    return redirect(url_for('get_cart'))
+
+        except Exception as e:
+            print(e)
+            return redirect(url_for('get_cart'))
+
+
+@app.route('/delete-item/<int:id>')
+def delete_item(id):
+    if 'Shoppingcart' not in session or len(session['Shoppingcart']) <= 0:
+        return redirect(url_for('index'))
+    try:
+        session.modified = True
+        for key, item in session['Shoppingcart'].items():
+            if int(key) == id:
+                session['Shoppingcart'].pop(key, None)
+                return redirect(url_for('get_cart'))
+    except Exception as e:
+        print(e)
+        return redirect(url_for('get_cart'))
+
+
+@app.route('/clear-cart')
+def clear_cart():
+    try:
+        session.pop('Shoppingcart', None)
+        return redirect(url_for('index'))
+    except Exception as e:
+        print(e)
 
 
 @app.route('/admin')

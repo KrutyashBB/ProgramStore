@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title%}
+<title>Корзина</title>
+{% endblock %}
+
+{% block content %}
+
+<div class="row">
+    <div class="col-md-12">
+        <table class="table table-sm table-success align-baseline">
+            <thead>
+            <tr>
+                <th scope="col">№</th>
+                <th scope="col">Фото</th>
+                <th scope="col">Название</th>
+                <th scope="col">Количество</th>
+                <th scope="col">Цена</th>
+                <th scope="col">Итоговая Цена</th>
+                <th scope="col">Редактировать</th>
+                <th scope="col">Удалить</th>
+            </tr>
+            </thead>
+            <tbody class="table-group-divider">
+            {% for key, product in session['Shoppingcart'].items() %}
+            <tr>
+                <th class="col-1">{{loop.index}}</th>
+                <th class="col-1"><img src="{{url_for('static', filename='img/products/' + product.image)}}" width="40">
+                </th>
+                <th class="col-3">{{product.name}}</th>
+                <form action="{{url_for('update_cart', id=key)}}" method="post">
+                    <th class="col-2"><input type="number" name="quantity" value="{{product.quantity}}" min="1"
+                                             max="10"></th>
+                    <th class="col-1">{{product.price}}</th>
+                    {% set subtotal = product.quantity|int * product.price|int %}
+                    <th class="col-2">{{subtotal}}</th>
+                    <th class="w-25"><button type="submit" class="btn btn-secondary">Редактировать</button></th>
+                </form>
+                <th class="w-25"><a href="{{url_for('delete_item', id=key)}}" class="btn btn-danger">Удалить</a></th>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <table class="table table-sm">
+            <tr>
+                <td class="col-10"><h4>Итоговая Сумма: {{grandtotal}} РУБ</h4></td>
+                <td class="col-2" style="padding-left:55px;"><a href="{{url_for('clear_cart')}}" class="btn btn-danger">Очистить Все</a></td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+
+{% endblock %}
+
+
+

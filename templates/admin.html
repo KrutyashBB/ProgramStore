@@ -22,14 +22,14 @@
     <tbody class="table-group-divider">
     {% for product in products %}
     <tr>
-        <th class="w-25">{{loop.index}}</th>
-        <th class="w-25">{{product.name}}</th>
-        <th class="w-25">{{product.price}}</th>
-        <th class="w-25">{{product.stock}}</th>
-        <th class="w-25"><img src="{{url_for('static', filename='img/products/' + product.img_1)}}" width="40"></th>
-        <th class="w-25"><a href="{{url_for('edit_product', id=product.id)}}"
+        <th class="col-1">{{loop.index}}</th>
+        <th class="col-3">{{product.name}}</th>
+        <th class="col-1">{{product.price}}</th>
+        <th class="col-2">{{product.stock}}</th>
+        <th class="col-1"><img src="{{url_for('static', filename='img/products/' + product.img_1)}}" width="40"></th>
+        <th class="col-1"><a href="{{url_for('edit_product', id=product.id)}}"
                             class="btn btn-secondary">Редактировать</a></th>
-        <th class="w-25">
+        <th class="col-1">
             <!-- Кнопка-триггер модального окна -->
             <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#exampleModal-{{product.id}}">
                 Удалить

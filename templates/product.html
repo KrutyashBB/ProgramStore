@@ -18,7 +18,13 @@
             <img src="{{url_for('static', filename='img/products/' + product.img_3)}}" alt="{{product.name}}"
                  width="100"></a>
         <br><br>
-        <a href="" class="btn btn-warning btn-lg">Добавить в корзину</a>
+<!--        <a href="" class="btn btn-warning btn-lg">Добавить в корзину</a>-->
+        <form action="{{url_for('add_cart')}}" method="post">
+            <input type="hidden" name="product_id" value="{{product.id}}">
+            <button type="submit" class="btn btn-lg btn-warning">Добавить в корзину</button><br><br>
+            <label for="">Количество:</label>
+            <input type="number" name="quantity" value="1" min="1" max="{{product.stock}}">
+        </form>
     </center>
     </div>
     <div class="col-md-8 offset-md-1 align-self-start shadow p-3 mb-3 bg-white">
