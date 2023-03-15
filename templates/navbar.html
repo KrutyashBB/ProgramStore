@@ -34,8 +34,9 @@
           <a class="nav-link" href="{{url_for('get_cart')}}">Корзина ({{session['Shoppingcart']|length}})</a>
         </li>
       </ul>
-      <form class="d-flex" role="search">
-        <input class="form-control me-2" type="search" placeholder="Поиск" aria-label="Поиск">
+      <form method="POST" action="{{url_for('search')}}" class="d-flex" role="search">
+        {{ form.hidden_tag() }}
+        <input class="form-control me-2" name="searched" type="search" placeholder="Поиск" aria-label="Поиск">
         <button class="btn btn-outline-secondary" type="submit">Поиск</button>
       </form>
     </div>

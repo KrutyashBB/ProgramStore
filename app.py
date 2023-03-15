@@ -92,9 +92,20 @@ class AddProductForm(FlaskForm):
     submit = SubmitField("Добавить")
 
 
+class SearchForm(FlaskForm):
+    searched = StringField("Поиск", validators=[DataRequired()])
+    submit = SubmitField("Кнопка")
+
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
+
+@app.context_processor
+def base():
+    form = SearchForm()
+    return dict(form=form)
 
 
 @app.route('/reviews', methods=['GET', 'POST'])
@@ -276,7 +287,7 @@ def add_cart():
         return redirect(request.referrer)
 
 
-@app.route('/carts')
+@app.route('/cart')
 def get_cart():
     if 'Shoppingcart' not in session or len(session['Shoppingcart']) <= 0:
         return redirect(url_for('catalog'))
@@ -327,6 +338,18 @@ def clear_cart():
         return redirect(url_for('index'))
     except Exception as e:
         print(e)
+
+
+@app.route('/search', methods=['POST'])
+def search():
+    form = SearchForm()
+    products = Products.query
+    product.searched = form.searched.data
+    if form.validate_on_submit() and product.searched:
+        products = products.filter(Products.name.like('%' + product.searched + '%')).all()
+        return render_template('search.html', form=form, searched=product.searched, products=products)
+    else:
+        return redirect(url_for('index'))
 
 
 @app.route('/admin')
