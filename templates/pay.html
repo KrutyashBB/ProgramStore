@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title%}
+<title>Оформление заказа</title>
+{% endblock %}
+
+{% block content %}
+
+<h1 style="margin-bottom: 20px;">Оформление заказа</h1>
+<div class="shadow p-3 mb-5 bg-white rounded">
+    <h2 style="margin: 25px 35px;">Подтвердить Заказ</h2>
+    <div class="before_buy">
+        Нажимая на кнопку «Оплатить» вы подтверждаете, что уведомлены о том, что приобретаемые вами
+        товары могут быть активированы только в тех регионах, что указаны в описании и принимаете условия
+        Пользовательского соглашения, а так же даете согласие на обработку Персональных данных.
+    </div>
+    <div class="payment_form" style="margin: 25px 35px;">
+        <form method="POST">
+            {{ form.hidden_tag() }}
+
+            {{ form.email.label(class="form-label") }}
+            {{ form.email(class="form-control") }}
+
+            {{ form.card_number.label(class="form-label") }}
+            {{ form.card_number(class="form-control") }}
+
+            <br>
+            {{ form.submit(class="btn btn-secondary") }}
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,7 +1,10 @@
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
 from flask import Flask, request, render_template, url_for, flash, redirect, current_app, session
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField
-from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
+from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user
 from werkzeug.utils import secure_filename
 from wtforms import StringField, SubmitField, EmailField, IntegerField, PasswordField, validators
 from wtforms.widgets import TextArea
@@ -14,6 +17,7 @@ from flask_ckeditor import CKEditor
 from flask_ckeditor import CKEditorField
 
 import os
+import smtplib
 import uuid
 
 app = Flask(__name__)
@@ -58,6 +62,16 @@ class Products(db.Model):
     img_2 = db.Column(db.String(150), nullable=False)
     img_3 = db.Column(db.String(150), nullable=False)
 
+    keys = db.relationship("ActivationKeys", back_populates='product')
+
+
+class ActivationKeys(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    key = db.Column(db.String(70), nullable=False)
+    product_id = db.Column(db.Integer,
+                           db.ForeignKey("products.id"))
+    product = db.relationship('Products')
+
 
 class ReviewForm(FlaskForm):
     username = StringField('Имя', validators=[DataRequired()])
@@ -76,16 +90,22 @@ class RegisterForm(FlaskForm):
 
 class LoginForm(FlaskForm):
     email = EmailField("Email", validators=[DataRequired()])
-    password_hash = PasswordField('Пароль', [validators.DataRequired()])
+    password_hash = PasswordField('Пароль', validators=[DataRequired()])
     submit = SubmitField("Войти")
+
+
+class PaymentForm(FlaskForm):
+    email = EmailField("Email", validators=[DataRequired()])
+    card_number = IntegerField("Номер карты", validators=[DataRequired()])
+    submit = SubmitField("Оплатить")
 
 
 class AddProductForm(FlaskForm):
     name = StringField("Название", validators=[DataRequired()])
     price = IntegerField("Цена", validators=[DataRequired()])
     stock = IntegerField("Количество", validators=[DataRequired()])
-    # description = StringField('Описание', validators=[DataRequired()], widget=TextArea())
     description = CKEditorField('Описание', validators=[DataRequired()])
+    keys = FileField('Ключи Активации(.txt)', validators=[DataRequired()])
     img_1 = FileField('Главное фото', validators=[DataRequired()])
     img_2 = FileField('Фото 2', validators=[DataRequired()])
     img_3 = FileField('Фото 3', validators=[DataRequired()])
@@ -124,13 +144,17 @@ def reviews():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     form = RegisterForm()
-    if request.method == 'POST' and form.validate_on_submit():
-        hashed_pw = generate_password_hash(form.password_hash.data, 'sha256')
-        user = User(name=form.name.data, email=form.email.data, password_hash=hashed_pw)
-        db.session.add(user)
-        db.session.commit()
-        flash('Вы успешно зарегистрировались')
-        return redirect(url_for('index'))
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user is None:
+            hashed_pw = generate_password_hash(form.password_hash.data, 'sha256')
+            user = User(name=form.name.data, email=form.email.data, password_hash=hashed_pw)
+            db.session.add(user)
+            db.session.commit()
+            flash('Вы успешно зарегистрировались')
+            return redirect(url_for('index'))
+        else:
+            flash('Пользователь с такой почтой уже существует')
     our_users = User.query.order_by(User.name)
     return render_template('register.html', form=form, our_users=our_users)
 
@@ -184,8 +208,21 @@ def add_product():
 
         product = Products(name=name, price=price, stock=stock, description=desc, img_1=img_1, img_2=img_2, img_3=img_3)
         db.session.add(product)
-        flash('Товар был успешно добавлен')
         db.session.commit()
+
+        keys = request.files['keys']
+        filename = secure_filename(keys.filename)
+        keys.save(os.path.join("static", filename))
+        with open(f"static/{filename}") as f:
+            file_content = f.read().split('\n')
+            for key in file_content:
+                activate_key = ActivationKeys(key=key)
+                product.keys.append(activate_key)
+                db.session.commit()
+        if os.path.isfile(f"static/{filename}"):
+            os.remove(f"static/{filename}")
+
+        flash('Товар был успешно добавлен')
         return redirect(url_for('add_product'))
 
     return render_template('add-product.html', form=form)
@@ -201,6 +238,19 @@ def edit_product(id):
         product.price = form.price.data
         product.stock = form.stock.data
         product.description = form.description.data
+
+        keys = request.files['keys']
+        filename = secure_filename(keys.filename)
+        keys.save(os.path.join("static", filename))
+        with open(f"static/{filename}") as f:
+            file_content = f.read().split('\n')
+            for key in file_content:
+                activate_key = ActivationKeys(key=key)
+                product.keys.append(activate_key)
+                db.session.commit()
+        if os.path.isfile(f"static/{filename}"):
+            os.remove(f"static/{filename}")
+
         if request.files.get('img_1'):
             try:
                 os.unlink(os.path.join(current_app.root_path, 'static/img/products/' + product.img_1))
@@ -340,6 +390,43 @@ def clear_cart():
         print(e)
 
 
+def send_notification(email, txt):
+    msg = MIMEMultipart()
+    msg['From'] = 'makeev12358@yandex.ru'
+    msg['To'] = email
+    msg['Subject'] = 'ProgramStore ключ'
+    message = txt
+    msg.attach(MIMEText(message))
+    try:
+        mailserver = smtplib.SMTP('smtp.yandex.ru', 587)
+        mailserver.set_debuglevel(True)
+        mailserver.ehlo()
+        mailserver.starttls()
+        mailserver.ehlo()
+        mailserver.login('makeev12358@yandex.ru', 'dhepsvxameykejpq')
+        mailserver.sendmail('makeev12358@yandex.ru', email, msg.as_string())
+        mailserver.quit()
+        print("Письмо успешно отправлено")
+    except smtplib.SMTPException:
+        print("Ошибка: Невозможно отправить сообщение")
+
+
+@app.route('/pay', methods=['GET', 'POST'])
+def pay():
+    form = PaymentForm()
+    if form.validate_on_submit():
+        email = form.email.data
+        card_num = form.card_number.data
+        for key, prod in session['Shoppingcart'].items():
+            count = int(prod['quantity'])
+            product = Products.query.get_or_404(key)
+            keys = '\n'.join([product.keys[i].key for i in range(count)])
+
+            # send_notification(email, '\n'.join(keys))
+            # return redirect(url_for('index'))
+    return render_template('pay.html', form=form)
+
+
 @app.route('/search', methods=['POST'])
 def search():
     form = SearchForm()
@@ -361,7 +448,8 @@ def admin():
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    product = Products.query.order_by(Products.stock)
+    return render_template('index.html', product=product)
 
 
 @app.route('/catalog')

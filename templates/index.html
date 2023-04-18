@@ -11,4 +11,29 @@
     </div>
   </div>
 </div>
+
+<h1 style="margin: 25px 0px;">Топ продаж</h1>
+
+
+<div class="row">
+    {% for i in range(4) %}
+    <div class="col-3 mb-3">
+        <div class="card" style="width: 14rem;">
+            <img src="{{url_for('static', filename='img/products/' + product[i].img_1)}}" class="card-img-top">
+            <div class="card-body">
+                <h5 class="card-title">{{product[i].name}}</h5>
+                <h6 class="card-subtitle mb-2 text-muted">{{product[i].price}} РУБ</h6>
+                <a href="{{url_for('product', id=product[i].id)}}" class="btn btn-primary btn-sm">Подробнее</a>
+                <form action="{{url_for('add_cart')}}" method="post">
+                    <input type="hidden" name="product_id" value="{{product[i].id}}">
+                    <button type="submit" class="btn btn-sm btn-warning mt-1">Добавить в корзину</button>
+                    <input type="hidden" name="quantity" value="1" min="1" max="{{product[i].stock}}">
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+
 {% endblock %}

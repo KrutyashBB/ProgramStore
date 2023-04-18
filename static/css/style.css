@@ -4,3 +4,10 @@ body {
 h5 {
     font-size: 14px;
 }
+
+.before_buy {
+    margin: 0 35px;
+    background: #fff0bd;
+    color: #bda553;
+    padding: 15px 20px;
+}

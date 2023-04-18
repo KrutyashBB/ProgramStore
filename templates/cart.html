@@ -30,7 +30,7 @@
                 <th class="col-3">{{product.name}}</th>
                 <form action="{{url_for('update_cart', id=key)}}" method="post">
                     <th class="col-2"><input type="number" name="quantity" value="{{product.quantity}}" min="1"
-                                             max="10"></th>
+                                             max="{{product.quantity}}"></th>
                     <th class="col-1">{{product.price}}</th>
                     {% set subtotal = product.quantity|int * product.price|int %}
                     <th class="col-2">{{subtotal}}</th>
@@ -44,7 +44,7 @@
         <table class="table table-sm mt-5">
             <tr class="align-bottom">
                 <td class="w-75"><h4>Итоговая Сумма: {{grandtotal}} РУБ</h4></td>
-                <td class="w-0" ><a href="" class="btn btn-success">Оформить Заказ</a></td>
+                <td class="w-0" ><a href="{{url_for('pay')}}" class="btn btn-success">Оформить Заказ</a></td>
                 <td class="w-0" ><a href="{{url_for('clear_cart')}}" class="btn btn-danger">Очистить Все</a></td>
             </tr>
         </table>
