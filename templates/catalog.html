@@ -8,12 +8,11 @@
 
 <div class="row">
     {% for product in products %}
-    <div class="col-3 mb-3">
-        <div class="card" style="width: 14rem;">
+    <div class="col md-3">
+        <div class="card" style="width: 14rem; margin-bottom: 20px;">
             <img src="{{url_for('static', filename='img/products/' + product.img_1)}}" class="card-img-top">
             <div class="card-body">
-                <h5 class="card-title">{{product.name}}</h5>
-                <h6 class="card-subtitle mb-2 text-muted">{{product.price}} РУБ</h6>
+                <h5 class="card-title">{{product.price}} РУБ</h5>
                 <a href="{{url_for('product', id=product.id)}}" class="btn btn-primary btn-sm">Подробнее</a>
                 <form action="{{url_for('add_cart')}}" method="post">
                     <input type="hidden" name="product_id" value="{{product.id}}">

@@ -1,10 +1,7 @@
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-
 from flask import Flask, request, render_template, url_for, flash, redirect, current_app, session
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField
-from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user
+from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
 from werkzeug.utils import secure_filename
 from wtforms import StringField, SubmitField, EmailField, IntegerField, PasswordField, validators
 from wtforms.widgets import TextArea
@@ -19,6 +16,9 @@ from flask_ckeditor import CKEditorField
 import os
 import smtplib
 import uuid
+
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 app = Flask(__name__)
 ckeditor = CKEditor(app)
@@ -131,7 +131,7 @@ def base():
 @app.route('/reviews', methods=['GET', 'POST'])
 def reviews():
     form = ReviewForm()
-    reviews = Reviews.query.order_by(Reviews.date_added)
+    reviews = Reviews.query.order_by(Reviews.date_added.desc())
     if form.validate_on_submit() and request.method == 'POST':
         review = Reviews(username=form.username.data, review=form.review.data)
         db.session.add(review)
@@ -139,6 +139,25 @@ def reviews():
         form.username.data = ''
         form.review.data = ''
     return render_template('reviews.html', form=form, reviews=reviews)
+
+
+@app.route('/reviews/delete/<int:id>')
+@login_required
+def delete_review(id):
+    review_to_delete = Reviews.query.get_or_404(id)
+    id = current_user.id
+    if id == 1:
+        try:
+            db.session.delete(review_to_delete)
+            db.session.commit()
+            flash('Отзыв успешно удалён!')
+            return redirect(url_for('reviews'))
+        except:
+            flash('Произошла ошибка при удалении отзыва!')
+            return redirect(url_for('reviews'))
+    else:
+        flash('У тебя нет прав для удаления этого отзыва!')
+        return redirect(url_for('reviews'))
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -245,9 +264,10 @@ def edit_product(id):
         with open(f"static/{filename}") as f:
             file_content = f.read().split('\n')
             for key in file_content:
-                activate_key = ActivationKeys(key=key)
-                product.keys.append(activate_key)
-                db.session.commit()
+                if key:
+                    activate_key = ActivationKeys(key=key)
+                    product.keys.append(activate_key)
+                    db.session.commit()
         if os.path.isfile(f"static/{filename}"):
             os.remove(f"static/{filename}")
 
@@ -417,13 +437,23 @@ def pay():
     if form.validate_on_submit():
         email = form.email.data
         card_num = form.card_number.data
+        keys = []
         for key, prod in session['Shoppingcart'].items():
             count = int(prod['quantity'])
+            name = prod['name']
             product = Products.query.get_or_404(key)
-            keys = '\n'.join([product.keys[i].key for i in range(count)])
-
-            # send_notification(email, '\n'.join(keys))
-            # return redirect(url_for('index'))
+            for i in range(count):
+                keys.append(product.keys[i].key + ' ' + name)
+                db.session.delete(product.keys[i])
+                db.session.commit()
+            product.stock = int(product.stock) - count
+            db.session.commit()
+        send_notification(email, '\n'.join(keys))
+        try:
+            session.pop('Shoppingcart', None)
+        except Exception as e:
+            print(e)
+        return redirect(url_for('index'))
     return render_template('pay.html', form=form)
 
 
@@ -442,14 +472,19 @@ def search():
 @app.route('/admin')
 @login_required
 def admin():
-    products = Products.query.all()
-    return render_template('admin.html', products=products)
+    if current_user.id == 1:
+        products = Products.query.all()
+        return render_template('admin.html', products=products)
+    else:
+        flash('У вас нет прав доступа')
+        return redirect(url_for('index'))
 
 
 @app.route('/')
 def index():
-    product = Products.query.order_by(Products.stock)
-    return render_template('index.html', product=product)
+    product = Products.query.order_by(Products.stock).filter(Products.stock > 0)
+    count = 4 if len(list(product)) > 4 else len(list(product))
+    return render_template('index.html', product=product, count=count)
 
 
 @app.route('/catalog')
