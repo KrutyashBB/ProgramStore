@@ -1,17 +1,12 @@
 from flask import Flask, request, render_template, url_for, flash, redirect, current_app, session
-from flask_wtf import FlaskForm
-from flask_wtf.file import FileField
 from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
 from werkzeug.utils import secure_filename
-from wtforms import StringField, SubmitField, EmailField, IntegerField, PasswordField, validators
-from wtforms.widgets import TextArea
-from wtforms.validators import DataRequired
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import date
+from webforms import ReviewForm, PaymentForm, SearchForm, LoginForm, RegisterForm, AddProductForm
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_ckeditor import CKEditor
-from flask_ckeditor import CKEditorField
 
 import os
 import smtplib
@@ -73,50 +68,6 @@ class ActivationKeys(db.Model):
     product = db.relationship('Products')
 
 
-class ReviewForm(FlaskForm):
-    username = StringField('Имя', validators=[DataRequired()])
-    review = StringField('Отзыв', validators=[DataRequired()], widget=TextArea())
-    submit = SubmitField('Отправить')
-
-
-class RegisterForm(FlaskForm):
-    name = StringField("Имя", validators=[DataRequired()])
-    email = EmailField("Email", validators=[DataRequired()])
-    password_hash = PasswordField('Пароль', [validators.DataRequired(),
-                                             validators.EqualTo('password_hash2', message='Пароли должны совпадать')])
-    password_hash2 = PasswordField('Подтвердите Пароль')
-    submit = SubmitField("Зарегистрироваться")
-
-
-class LoginForm(FlaskForm):
-    email = EmailField("Email", validators=[DataRequired()])
-    password_hash = PasswordField('Пароль', validators=[DataRequired()])
-    submit = SubmitField("Войти")
-
-
-class PaymentForm(FlaskForm):
-    email = EmailField("Email", validators=[DataRequired()])
-    card_number = IntegerField("Номер карты", validators=[DataRequired()])
-    submit = SubmitField("Оплатить")
-
-
-class AddProductForm(FlaskForm):
-    name = StringField("Название", validators=[DataRequired()])
-    price = IntegerField("Цена", validators=[DataRequired()])
-    stock = IntegerField("Количество", validators=[DataRequired()])
-    description = CKEditorField('Описание', validators=[DataRequired()])
-    keys = FileField('Ключи Активации(.txt)', validators=[DataRequired()])
-    img_1 = FileField('Главное фото', validators=[DataRequired()])
-    img_2 = FileField('Фото 2', validators=[DataRequired()])
-    img_3 = FileField('Фото 3', validators=[DataRequired()])
-    submit = SubmitField("Добавить")
-
-
-class SearchForm(FlaskForm):
-    searched = StringField("Поиск", validators=[DataRequired()])
-    submit = SubmitField("Кнопка")
-
-
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -174,8 +125,7 @@ def register():
             return redirect(url_for('index'))
         else:
             flash('Пользователь с такой почтой уже существует')
-    our_users = User.query.order_by(User.name)
-    return render_template('register.html', form=form, our_users=our_users)
+    return render_template('register.html', form=form)
 
 
 @app.route('/login', methods=['GET', 'POST'])
