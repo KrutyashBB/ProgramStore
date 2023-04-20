@@ -164,106 +164,118 @@ def create_product_photo(file):
 @app.route('/add-product', methods=['GET', 'POST'])
 @login_required
 def add_product():
-    form = AddProductForm()
-    if request.method == 'POST':
-        name = form.name.data
-        price = form.price.data
-        stock = form.stock.data
-        desc = form.description.data
+    if current_user.id == 1:
+        form = AddProductForm()
+        if request.method == 'POST':
+            name = form.name.data
+            price = form.price.data
+            stock = form.stock.data
+            desc = form.description.data
 
-        img_1 = create_product_photo(request.files['img_1'])
-        img_2 = create_product_photo(request.files['img_2'])
-        img_3 = create_product_photo(request.files['img_3'])
+            img_1 = create_product_photo(request.files['img_1'])
+            img_2 = create_product_photo(request.files['img_2'])
+            img_3 = create_product_photo(request.files['img_3'])
 
-        product = Products(name=name, price=price, stock=stock, description=desc, img_1=img_1, img_2=img_2, img_3=img_3)
-        db.session.add(product)
-        db.session.commit()
+            product = Products(name=name, price=price, stock=stock, description=desc, img_1=img_1, img_2=img_2, img_3=img_3)
+            db.session.add(product)
+            db.session.commit()
 
-        keys = request.files['keys']
-        filename = secure_filename(keys.filename)
-        keys.save(os.path.join("static", filename))
-        with open(f"static/{filename}") as f:
-            file_content = f.read().split('\n')
-            for key in file_content:
-                activate_key = ActivationKeys(key=key)
-                product.keys.append(activate_key)
-                db.session.commit()
-        if os.path.isfile(f"static/{filename}"):
-            os.remove(f"static/{filename}")
+            keys = request.files['keys']
+            filename = secure_filename(keys.filename)
+            keys.save(os.path.join("static", filename))
+            with open(f"static/{filename}") as f:
+                file_content = f.read().split('\n')
+                for key in file_content:
+                    activate_key = ActivationKeys(key=key)
+                    product.keys.append(activate_key)
+                    db.session.commit()
+            if os.path.isfile(f"static/{filename}"):
+                os.remove(f"static/{filename}")
 
-        flash('Товар был успешно добавлен')
-        return redirect(url_for('add_product'))
+            flash('Товар был успешно добавлен')
+            return redirect(url_for('add_product'))
 
-    return render_template('add-product.html', form=form)
+        return render_template('add-product.html', form=form)
+    else:
+        flash('У вас нет прав доступа')
+        return redirect(url_for('index'))
 
 
 @app.route('/edit-product/<int:id>', methods=['GET', 'POST'])
 def edit_product(id):
-    form = AddProductForm()
-    form.submit.label.text = 'Редактировать'
-    product = Products.query.get_or_404(id)
-    if request.method == 'POST':
-        product.name = form.name.data
-        product.price = form.price.data
-        product.stock = form.stock.data
-        product.description = form.description.data
+    if current_user.id == 1:
+        form = AddProductForm()
+        form.submit.label.text = 'Редактировать'
+        product = Products.query.get_or_404(id)
+        if request.method == 'POST':
+            product.name = form.name.data
+            product.price = form.price.data
+            product.stock = form.stock.data
+            product.description = form.description.data
 
-        keys = request.files['keys']
-        filename = secure_filename(keys.filename)
-        keys.save(os.path.join("static", filename))
-        with open(f"static/{filename}") as f:
-            file_content = f.read().split('\n')
-            for key in file_content:
-                if key:
-                    activate_key = ActivationKeys(key=key)
-                    product.keys.append(activate_key)
-                    db.session.commit()
-        if os.path.isfile(f"static/{filename}"):
-            os.remove(f"static/{filename}")
+            keys = request.files['keys']
+            filename = secure_filename(keys.filename)
+            keys.save(os.path.join("static", filename))
+            with open(f"static/{filename}") as f:
+                file_content = f.read().split('\n')
+                for key in file_content:
+                    if key:
+                        activate_key = ActivationKeys(key=key)
+                        product.keys.append(activate_key)
+                        db.session.commit()
+            if os.path.isfile(f"static/{filename}"):
+                os.remove(f"static/{filename}")
 
-        if request.files.get('img_1'):
-            try:
-                os.unlink(os.path.join(current_app.root_path, 'static/img/products/' + product.img_1))
-                product.img_1 = create_product_photo(request.files['img_1'])
-            except:
-                product.img_1 = create_product_photo(request.files['img_1'])
-        if request.files.get('img_2'):
-            try:
-                os.unlink(os.path.join(current_app.root_path, 'static/img/products/' + product.img_2))
-                product.img_2 = create_product_photo(request.files['img_2'])
-            except:
-                product.img_2 = create_product_photo(request.files['img_2'])
-        if request.files.get('img_3'):
-            try:
-                os.unlink(os.path.join(current_app.root_path, 'static/img/products/' + product.img_3))
-                product.img_3 = create_product_photo(request.files['img_3'])
-            except:
-                product.img_3 = create_product_photo(request.files['img_3'])
-        db.session.commit()
-        flash('Товар успешо изменён')
-        return redirect(url_for('admin'))
+            if request.files.get('img_1'):
+                try:
+                    os.unlink(os.path.join(current_app.root_path, 'static/img/products/' + product.img_1))
+                    product.img_1 = create_product_photo(request.files['img_1'])
+                except:
+                    product.img_1 = create_product_photo(request.files['img_1'])
+            if request.files.get('img_2'):
+                try:
+                    os.unlink(os.path.join(current_app.root_path, 'static/img/products/' + product.img_2))
+                    product.img_2 = create_product_photo(request.files['img_2'])
+                except:
+                    product.img_2 = create_product_photo(request.files['img_2'])
+            if request.files.get('img_3'):
+                try:
+                    os.unlink(os.path.join(current_app.root_path, 'static/img/products/' + product.img_3))
+                    product.img_3 = create_product_photo(request.files['img_3'])
+                except:
+                    product.img_3 = create_product_photo(request.files['img_3'])
+            db.session.commit()
+            flash('Товар успешо изменён')
+            return redirect(url_for('admin'))
+        else:
+            form.name.data = product.name
+            form.price.data = product.price
+            form.stock.data = product.stock
+            form.description.data = product.description
+            return render_template('edit_product.html', form=form)
     else:
-        form.name.data = product.name
-        form.price.data = product.price
-        form.stock.data = product.stock
-        form.description.data = product.description
-        return render_template('edit_product.html', form=form)
+        flash('У вас нет прав доступа')
+        return redirect(url_for('index'))
 
 
 @app.route('/delete-product/<int:id>', methods=['POST'])
 def delete_product(id):
-    product = Products.query.get_or_404(id)
-    if request.method == 'POST':
-        try:
-            os.unlink(os.path.join(current_app.root_path, 'static/img/products/' + product.img_1))
-            os.unlink(os.path.join(current_app.root_path, 'static/img/products/' + product.img_2))
-            os.unlink(os.path.join(current_app.root_path, 'static/img/products/' + product.img_3))
-        except:
-            print('ERROR')
-        db.session.delete(product)
-        db.session.commit()
-        flash('Товар успешно удалён')
-    return redirect(url_for('admin'))
+    if current_user.id == 1:
+        product = Products.query.get_or_404(id)
+        if request.method == 'POST':
+            try:
+                os.unlink(os.path.join(current_app.root_path, 'static/img/products/' + product.img_1))
+                os.unlink(os.path.join(current_app.root_path, 'static/img/products/' + product.img_2))
+                os.unlink(os.path.join(current_app.root_path, 'static/img/products/' + product.img_3))
+            except:
+                print('ERROR')
+            db.session.delete(product)
+            db.session.commit()
+            flash('Товар успешно удалён')
+        return redirect(url_for('admin'))
+    else:
+        flash('У вас нет прав доступа')
+        return redirect(url_for('index'))
 
 
 @app.route('/product/<int:id>')
@@ -459,4 +471,4 @@ def page_not_found(e):
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()

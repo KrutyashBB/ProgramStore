@@ -17,8 +17,8 @@
 
 <div class="row">
     {% for i in range(count) %}
-    <div class="col md-3">
-        <div class="card" style="width: 14rem; margin-bottom: 20px;">
+    <div class="col-md-3">
+        <div class="card" style="margin-bottom: 20px;">
             <img src="{{url_for('static', filename='img/products/' + product[i].img_1)}}" class="card-img-top">
             <div class="card-body">
                 <h5 class="card-title">{{product[i].price}} РУБ</h5>

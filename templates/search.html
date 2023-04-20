@@ -8,8 +8,8 @@
 
 <div class="row">
     {% for product in products %}
-    <div class="col-3 mb-3">
-        <div class="card" style="width: 14rem;">
+    <div class="col-md-3">
+        <div class="card" style="margin-bottom: 20px;">
             <img src="{{url_for('static', filename='img/products/' + product.img_1)}}" class="card-img-top">
             <div class="card-body">
                 <h5 class="card-title">{{product.price}} РУБ</h5>
