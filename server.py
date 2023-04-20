@@ -306,8 +306,11 @@ def add_cart():
                 if product_id in session['Shoppingcart']:
                     session.modified = True
                     for key, item in session['Shoppingcart'].items():
-                        if int(key) == int(product_id):
-                            item['quantity'] = int(item['quantity']) + int(quantity)
+                        if int(product.stock) >= int(item['quantity']) + int(quantity):
+                            if int(key) == int(product_id):
+                                item['quantity'] = int(item['quantity']) + int(quantity)
+                        else:
+                            item['quantity'] = int(product.stock)
                 else:
                     session['Shoppingcart'] = MagerDicts(session['Shoppingcart'], dictItems)
                     return redirect(request.referrer)
