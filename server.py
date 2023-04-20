@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, url_for, flash, redirect, current_app, session
+from flask import Flask, request, render_template, url_for, flash, redirect, current_app, session, jsonify
 from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -7,6 +7,7 @@ from webforms import ReviewForm, PaymentForm, SearchForm, LoginForm, RegisterFor
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_ckeditor import CKEditor
+from flask_restful import Api, abort, Resource
 
 import os
 import smtplib
@@ -15,10 +16,12 @@ import uuid
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+
 app = Flask(__name__)
 ckeditor = CKEditor(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SECRET_KEY'] = 'dsjahfjshdfjasf54564'
+api = Api(app)
 
 UPLOAD_FOLDER = 'static/img/products'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -66,6 +69,32 @@ class ActivationKeys(db.Model):
     product_id = db.Column(db.Integer,
                            db.ForeignKey("products.id"))
     product = db.relationship('Products')
+
+
+# api ресурсы
+def abort_if_not_found(id):
+    response = Products.query.get_or_404(id)
+    if not response:
+        abort(404, message=f'Id {id} not found')
+
+class ProductResource(Resource):
+    def get(self, id):
+        abort_if_not_found(id)
+        product = Products.query.get_or_404(id)
+        return jsonify({
+            'product': product.name
+        })
+
+    def delete(self, id):
+        abort_if_not_found(id)
+        product = db.session.query(Products).get_or_404(id)
+        db.session.delete(product)
+        db.session.commit()
+        return jsonify({'success': 'OK'})
+
+
+# определение url адресов для запросов к api
+api.add_resource(ProductResource, '/api/v1/products/<int:id>')
 
 
 @login_manager.user_loader
