@@ -176,7 +176,8 @@ def add_product():
             img_2 = create_product_photo(request.files['img_2'])
             img_3 = create_product_photo(request.files['img_3'])
 
-            product = Products(name=name, price=price, stock=stock, description=desc, img_1=img_1, img_2=img_2, img_3=img_3)
+            product = Products(name=name, price=price, stock=stock, description=desc, img_1=img_1, img_2=img_2,
+                               img_3=img_3)
             db.session.add(product)
             db.session.commit()
 
@@ -406,7 +407,8 @@ def pay():
             product = Products.query.get_or_404(key)
             for i in range(count):
                 keys.append(product.keys[i].key + ' ' + name)
-                db.session.delete(product.keys[i])
+            for j in range(count):
+                db.session.delete(product.keys[j])
                 db.session.commit()
             product.stock = int(product.stock) - count
             db.session.commit()
