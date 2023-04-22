@@ -72,29 +72,98 @@ class ActivationKeys(db.Model):
 
 
 # api ресурсы
-def abort_if_not_found(id):
-    response = Products.query.get_or_404(id)
+def abort_if_not_found(id, model):
+    response = model.query.get_or_404(id)
     if not response:
         abort(404, message=f'Id {id} not found')
 
+
 class ProductResource(Resource):
     def get(self, id):
-        abort_if_not_found(id)
+        abort_if_not_found(id, Products)
         product = Products.query.get_or_404(id)
-        return jsonify({
-            'product': product.name
-        })
+        return jsonify(
+            {'response':
+                {
+                'id': product.id,
+                'name': product.name,
+                'price': product.price,
+                'stock': product.stock,
+                }
+            })
 
+    @login_required
     def delete(self, id):
-        abort_if_not_found(id)
+        # пока не добавится авторизация через api воспользоваться будет невозможно ☹︎
+        if current_user.id != 1:
+            return jsonify({'message': '403 forbidden'})
+        abort_if_not_found(id, Products)
         product = db.session.query(Products).get_or_404(id)
         db.session.delete(product)
         db.session.commit()
         return jsonify({'success': 'OK'})
 
 
+class ProductListResource(Resource):
+    def get(self):
+        products = Products.query.all()
+        return jsonify(
+            {
+                'response': [{
+                    'id': el.id,
+                    'name': el.name,
+                    'price': el.price,
+                    'stock': el.stock,
+                } for el in products],
+            }
+        )   
+
+
+class UserResource(Resource):
+    def get(self, id):
+        abort_if_not_found(id, User)
+        user = User.query.get_or_404(id)
+        return jsonify(
+            {
+                'response': {
+                    'id' : user.id,
+                    'name': user.name,
+                    'email': user.email,
+                }
+            }
+        )
+    
+    @login_required
+    def delete(self, id):
+        # работает идентично product (никак)
+        if current_user.id != 1:
+            return jsonify({'message': '403 forbidden'})
+        abort_if_not_found(id, User)
+        user = db.session.query(User).get_or_404(id)
+        db.session.delete(user)
+        db.session.commit()
+        return jsonify({'success': 'OK'})
+
+
+class UserListResource(Resource):
+    def get(self):
+        users = User.query.all()
+        return jsonify(
+            {
+                'response': [{
+                    'id' : el.id,
+                    'name': el.name,
+                    'email': el.email,
+                } for el in users]
+            }
+        )
+
+
 # определение url адресов для запросов к api
 api.add_resource(ProductResource, '/api/v1/products/<int:id>')
+api.add_resource(ProductListResource, '/api/v1/products')
+api.add_resource(UserResource, '/api/v1/users/<int:id>')
+api.add_resource(UserListResource, '/api/v1/users')
 
 
 @login_manager.user_loader
