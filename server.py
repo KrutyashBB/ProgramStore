@@ -16,7 +16,6 @@ import uuid
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-
 app = Flask(__name__)
 ckeditor = CKEditor(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
@@ -72,98 +71,30 @@ class ActivationKeys(db.Model):
 
 
 # api ресурсы
-def abort_if_not_found(id, model):
-    response = model.query.get_or_404(id)
+def abort_if_not_found(id):
+    response = Products.query.get_or_404(id)
     if not response:
         abort(404, message=f'Id {id} not found')
 
 
 class ProductResource(Resource):
     def get(self, id):
-        abort_if_not_found(id, Products)
+        abort_if_not_found(id)
         product = Products.query.get_or_404(id)
-        return jsonify(
-            {'response':
-                {
-                'id': product.id,
-                'name': product.name,
-                'price': product.price,
-                'stock': product.stock,
-                }
-            })
+        return jsonify({
+            'product': product.name
+        })
 
-    @login_required
     def delete(self, id):
-        # пока не добавится авторизация через api воспользоваться будет невозможно ☹︎
-        if current_user.id != 1:
-            return jsonify({'message': '403 forbidden'})
-        abort_if_not_found(id, Products)
+        abort_if_not_found(id)
         product = db.session.query(Products).get_or_404(id)
         db.session.delete(product)
         db.session.commit()
         return jsonify({'success': 'OK'})
 
 
-class ProductListResource(Resource):
-    def get(self):
-        products = Products.query.all()
-        return jsonify(
-            {
-                'response': [{
-                    'id': el.id,
-                    'name': el.name,
-                    'price': el.price,
-                    'stock': el.stock,
-                } for el in products],
-            }
-        )   
-
-
-class UserResource(Resource):
-    def get(self, id):
-        abort_if_not_found(id, User)
-        user = User.query.get_or_404(id)
-        return jsonify(
-            {
-                'response': {
-                    'id' : user.id,
-                    'name': user.name,
-                    'email': user.email,
-                }
-            }
-        )
-    
-    @login_required
-    def delete(self, id):
-        # работает идентично product (никак)
-        if current_user.id != 1:
-            return jsonify({'message': '403 forbidden'})
-        abort_if_not_found(id, User)
-        user = db.session.query(User).get_or_404(id)
-        db.session.delete(user)
-        db.session.commit()
-        return jsonify({'success': 'OK'})
-
-
-class UserListResource(Resource):
-    def get(self):
-        users = User.query.all()
-        return jsonify(
-            {
-                'response': [{
-                    'id' : el.id,
-                    'name': el.name,
-                    'email': el.email,
-                } for el in users]
-            }
-        )
-
-
 # определение url адресов для запросов к api
 api.add_resource(ProductResource, '/api/v1/products/<int:id>')
-api.add_resource(ProductListResource, '/api/v1/products')
-api.add_resource(UserResource, '/api/v1/users/<int:id>')
-api.add_resource(UserListResource, '/api/v1/users')
 
 
 @login_manager.user_loader
@@ -426,9 +357,12 @@ def get_cart():
     if 'Shoppingcart' not in session or len(session['Shoppingcart']) <= 0:
         return redirect(url_for('catalog'))
     grandtotal = 0
+    product_id = {}
     for key, product in session['Shoppingcart'].items():
+        prod = Products.query.get_or_404(key)
         grandtotal += int(product['price']) * int(product['quantity'])
-    return render_template('cart.html', grandtotal=grandtotal)
+        product_id[key] = int(prod.stock)
+    return render_template('cart.html', grandtotal=grandtotal, product_id=product_id)
 
 
 @app.route('/update-cart/<int:id>', methods=['POST'])

@@ -6,6 +6,7 @@
 
 {% block content %}
 
+<h1 style="margin-bottom: 20px;">Корзина</h1>
 <div class="row">
     <div class="col-md-12">
         <table class="table table-sm table-success align-baseline">
@@ -30,7 +31,7 @@
                 <th class="col-3">{{product.name}}</th>
                 <form action="{{url_for('update_cart', id=key)}}" method="post">
                     <th class="col-2"><input type="number" name="quantity" value="{{product.quantity}}" min="1"
-                                             max="{{product.quantity}}"></th>
+                                             max="{{product_id[key]}}"></th>
                     <th class="col-1">{{product.price}}</th>
                     {% set subtotal = product.quantity|int * product.price|int %}
                     <th class="col-2">{{subtotal}}</th>
