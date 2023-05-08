@@ -11,3 +11,9 @@ h5 {
     color: #bda553;
     padding: 15px 20px;
 }
+
+.modal_img {
+    max-width: 100%;
+    height: auto;
+    width: auto\9;
+}

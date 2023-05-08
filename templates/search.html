@@ -8,7 +8,7 @@
 
 <div class="row">
     {% for product in products %}
-    <div class="col-md-3">
+    <div class="col-lg-3 col-md-4 col-sm-6">
         <div class="card" style="margin-bottom: 20px;">
             <img src="{{url_for('static', filename='img/products/' + product.img_1)}}" class="card-img-top">
             <div class="card-body">
