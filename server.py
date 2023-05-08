@@ -2,12 +2,13 @@ from flask import Flask, request, render_template, url_for, flash, redirect, cur
 from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import date
+from datetime import date, timedelta
 from webforms import ReviewForm, PaymentForm, SearchForm, LoginForm, RegisterForm, AddProductForm
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_ckeditor import CKEditor
 from flask_restful import Api, abort, Resource
+from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
 
 import os
 import smtplib
@@ -21,6 +22,7 @@ ckeditor = CKEditor(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SECRET_KEY'] = 'dsjahfjshdfjasf54564'
 api = Api(app)
+jwt = JWTManager(app)
 
 UPLOAD_FOLDER = 'static/img/products'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -46,6 +48,15 @@ class User(db.Model, UserMixin):
     name = db.Column(db.String(70), nullable=False)
     email = db.Column(db.String(120), nullable=False, unique=True)
     password_hash = db.Column(db.String(128), nullable=False)
+
+    def get_token(self, expire_time=24):
+        expire_delta = timedelta(expire_time)
+        token = create_access_token(
+            identity=self.id,
+            expires_delta=expire_delta
+        )
+        return token
+
 
 
 class Products(db.Model):
@@ -76,6 +87,22 @@ def abort_if_not_found(id, model):
     if not response:
         abort(404, message=f'Id {id} not found')
 
+class JWTLoginResource(Resource):
+    def post(self, email, password):
+        user = User.query.filter_by(email=email).first()
+        password = password
+        if user:
+            if check_password_hash(user.password_hash, password):
+                access_token = user.get_token()
+                return jsonify({'access_token':access_token})
+            else:
+                return jsonify({
+                    'message': "Неверный логин или пароль",
+                })
+        else:
+            return jsonify({
+                'message': "Пользователь не найден",
+            })
 
 class ProductResource(Resource):
     def get(self, id):
@@ -132,11 +159,7 @@ class UserResource(Resource):
             }
         )
 
-    @login_required
     def delete(self, id):
-        # работает идентично product (никак)
-        if current_user.id != 1:
-            return jsonify({'message': '403 forbidden'})
         abort_if_not_found(id, User)
         user = db.session.query(User).get_or_404(id)
         db.session.delete(user)
@@ -163,6 +186,7 @@ api.add_resource(ProductResource, '/api/v1/products/<int:id>')
 api.add_resource(ProductListResource, '/api/v1/products')
 api.add_resource(UserResource, '/api/v1/users/<int:id>')
 api.add_resource(UserListResource, '/api/v1/users')
+api.add_resource(JWTLoginResource, '/api/v1/jwt_login/<string:email>/<string:password>') # адрес получения jwt токена
 
 
 @login_manager.user_loader
