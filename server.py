@@ -88,8 +88,12 @@ def abort_if_not_found(id, model):
         abort(404, message=f'Id {id} not found')
 
 class JWTLoginResource(Resource):
-    def post(self, email, password):
+    def post(self):
+        email = request.headers.get('email')
+        password = request.headers.get('password')
         user = User.query.filter_by(email=email).first()
+        if user.id not in [1, 3]:
+            return jsonify({'message': 'доступ запрещен'})
         password = password
         if user:
             if check_password_hash(user.password_hash, password):
@@ -97,7 +101,7 @@ class JWTLoginResource(Resource):
                 return jsonify({'access_token':access_token})
             else:
                 return jsonify({
-                    'message': "Неверный логин или пароль",
+                    'message': "Неверный пароль",
                 })
         else:
             return jsonify({
@@ -105,9 +109,14 @@ class JWTLoginResource(Resource):
             })
 
 class ProductResource(Resource):
+    @jwt_required()
     def get(self, id):
         abort_if_not_found(id, Products)
         product = Products.query.get_or_404(id)
+        print(type(product.id))
+        print()
+        print()
+        print()
         return jsonify(
             {'response':
                 {
@@ -118,9 +127,8 @@ class ProductResource(Resource):
                 }
             })
 
-    @login_required
+    @jwt_required()
     def delete(self, id):
-        # пока не добавится авторизация через api воспользоваться будет невозможно ☹︎
         if current_user.id != 1:
             return jsonify({'message': '403 forbidden'})
         abort_if_not_found(id, Products)
@@ -131,6 +139,7 @@ class ProductResource(Resource):
 
 
 class ProductListResource(Resource):
+    @jwt_required()
     def get(self):
         products = Products.query.all()
         return jsonify(
@@ -146,6 +155,7 @@ class ProductListResource(Resource):
 
 
 class UserResource(Resource):
+    @jwt_required()
     def get(self, id):
         abort_if_not_found(id, User)
         user = User.query.get_or_404(id)
@@ -159,6 +169,7 @@ class UserResource(Resource):
             }
         )
 
+    @jwt_required()
     def delete(self, id):
         abort_if_not_found(id, User)
         user = db.session.query(User).get_or_404(id)
@@ -168,6 +179,7 @@ class UserResource(Resource):
 
 
 class UserListResource(Resource):
+    @jwt_required()
     def get(self):
         users = User.query.all()
         return jsonify(
@@ -182,11 +194,13 @@ class UserListResource(Resource):
 
 
 # определение url адресов для запросов к api
-api.add_resource(ProductResource, '/api/v1/products/<int:id>')
+api.add_resource(ProductResource, '/api/v1/product/<int:id>')
 api.add_resource(ProductListResource, '/api/v1/products')
 api.add_resource(UserResource, '/api/v1/users/<int:id>')
 api.add_resource(UserListResource, '/api/v1/users')
-api.add_resource(JWTLoginResource, '/api/v1/jwt_login/<string:email>/<string:password>') # адрес получения jwt токена
+
+# адрес получения jwt токена логин и пароль указываются в headers запроса
+api.add_resource(JWTLoginResource, '/api/v1/jwt_login')
 
 
 @login_manager.user_loader
