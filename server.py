@@ -58,7 +58,6 @@ class User(db.Model, UserMixin):
         return token
 
 
-
 class Products(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(70), nullable=False)
@@ -87,6 +86,7 @@ def abort_if_not_found(id, model):
     if not response:
         abort(404, message=f'Id {id} not found')
 
+
 class JWTLoginResource(Resource):
     def post(self):
         email = request.headers.get('email')
@@ -98,7 +98,7 @@ class JWTLoginResource(Resource):
         if user:
             if check_password_hash(user.password_hash, password):
                 access_token = user.get_token()
-                return jsonify({'access_token':access_token})
+                return jsonify({'access_token': access_token})
             else:
                 return jsonify({
                     'message': "Неверный пароль",
@@ -107,6 +107,7 @@ class JWTLoginResource(Resource):
             return jsonify({
                 'message': "Пользователь не найден",
             })
+
 
 class ProductResource(Resource):
     @jwt_required()
@@ -120,10 +121,10 @@ class ProductResource(Resource):
         return jsonify(
             {'response':
                 {
-                'id': product.id,
-                'name': product.name,
-                'price': product.price,
-                'stock': product.stock,
+                    'id': product.id,
+                    'name': product.name,
+                    'price': product.price,
+                    'stock': product.stock,
                 }
             })
 
@@ -151,7 +152,7 @@ class ProductListResource(Resource):
                     'stock': el.stock,
                 } for el in products],
             }
-        ) 
+        )
 
 
 class UserResource(Resource):
@@ -162,7 +163,7 @@ class UserResource(Resource):
         return jsonify(
             {
                 'response': {
-                    'id' : user.id,
+                    'id': user.id,
                     'name': user.name,
                     'email': user.email,
                 }
@@ -185,7 +186,7 @@ class UserListResource(Resource):
         return jsonify(
             {
                 'response': [{
-                    'id' : el.id,
+                    'id': el.id,
                     'name': el.name,
                     'email': el.email,
                 } for el in users]
@@ -224,6 +225,7 @@ def reviews():
         db.session.commit()
         form.username.data = ''
         form.review.data = ''
+        return redirect(url_for('reviews'))
     return render_template('reviews.html', form=form, reviews=reviews)
 
 
@@ -257,7 +259,7 @@ def register():
             db.session.add(user)
             db.session.commit()
             flash('Вы успешно зарегистрировались')
-            return redirect(url_for('index'))
+            return redirect(url_for('login'))
         else:
             flash('Пользователь с такой почтой уже существует')
     return render_template('register.html', form=form)
@@ -538,7 +540,7 @@ def send_notification(email, txt):
 @app.route('/pay', methods=['GET', 'POST'])
 def pay():
     form = PaymentForm()
-    if form.validate_on_submit():
+    if form.validate_on_submit() and 'Shoppingcart' in session:
         email = form.email.data
         card_num = form.card_number.data
         keys = []
@@ -558,7 +560,11 @@ def pay():
             session.pop('Shoppingcart', None)
         except Exception as e:
             print(e)
+        flash('Покупка прошла успешно!')
         return redirect(url_for('index'))
+    elif 'Shoppingcart' not in session:
+        flash('Ваша корзина пуста!')
+        return redirect(url_for('catalog'))
     return render_template('pay.html', form=form)
 
 
@@ -604,6 +610,11 @@ def guarantees():
 
 
 @app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+
+@app.errorhandler(405)
 def page_not_found(e):
     return render_template('404.html'), 404
 

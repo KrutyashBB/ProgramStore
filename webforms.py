@@ -15,9 +15,10 @@ class ReviewForm(FlaskForm):
 class RegisterForm(FlaskForm):
     name = StringField("Имя", validators=[DataRequired()])
     email = EmailField("Email", validators=[DataRequired()])
-    password_hash = PasswordField('Пароль', [validators.DataRequired(),
-                                             validators.EqualTo('password_hash2', message='Пароли должны совпадать')])
-    password_hash2 = PasswordField('Подтвердите Пароль')
+    password_hash = PasswordField('Пароль', validators=[validators.Length(min=6, max=10),
+                                                        validators.EqualTo('password_hash2',
+                                                                           message='Пароли должны совпадать')])
+    password_hash2 = PasswordField('Подтвердите Пароль', validators=[validators.Length(min=6, max=10)])
     submit = SubmitField("Зарегистрироваться")
 
 
